@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>株ウォッチ</title>
+<meta name="description" content="気になる日本株を登録すると、終値・前日比と「信用買い残」「機関の空売り」のバランスが並ぶ。登録なし・開くだけ。">
+<meta name="theme-color" content="#14532d">
+<link rel="manifest" href="kabu-watch.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
+<style>
+:root{
+  --bg:#f4f6f3; --card:#fff; --ink:#1c2420; --sub:#5d6a63; --line:#dfe5e0;
+  --main:#14532d; --main2:#1f7a45; --up:#d0342c; --down:#1f62c9;
+  --kai:#c98500; --kara:#3987e5; --warn:#fff6dc; --warnline:#e8c766;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#111613; --card:#1b221e; --ink:#e7ece9; --sub:#9aa79f; --line:#2c3630;
+    --main:#7fd49a; --main2:#7fd49a; --up:#ff7a70; --down:#7fb0ff; --warn:#2c2715; --warnline:#6b5a22; }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif;line-height:1.55;font-size:16px}
+header{background:#14532d;color:#fff;padding:14px 16px 12px;padding-top:calc(14px + env(safe-area-inset-top))}
+header h1{margin:0;font-size:21px;display:flex;align-items:center;gap:8px}
+.ver{font-size:11px;font-weight:normal;background:rgba(255,255,255,.18);border-radius:8px;padding:1px 7px}
+.fresh{font-size:12.5px;opacity:.9;margin-top:4px}
+nav{display:flex;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+nav button{flex:1;border:0;background:none;padding:12px 4px;font-size:15px;color:var(--sub);border-bottom:3px solid transparent;cursor:pointer}
+nav button.on{color:var(--main);border-bottom-color:var(--main);font-weight:bold}
+main{max-width:640px;margin:0 auto;padding:12px 16px 40px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.search{position:relative}
+.search input{width:100%;font-size:17px;padding:12px 14px;border:2px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink)}
+.search input:focus{outline:none;border-color:var(--main2)}
+.sug{list-style:none;margin:6px 0 0;padding:0}
+.sug li button{width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:none;padding:11px 6px;font-size:15.5px;color:var(--ink);cursor:pointer;display:flex;gap:10px;align-items:baseline}
+.sug li button:hover{background:rgba(31,122,69,.08)}
+.code{font-family:ui-monospace,Consolas,monospace;color:var(--sub);font-size:13.5px;min-width:3.2em}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:20px;padding:6px 12px;font-size:14px;cursor:pointer}
+.empty{color:var(--sub);text-align:center;padding:18px 6px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.name{font-weight:bold;font-size:17px;line-height:1.35;overflow-wrap:anywhere}
+.meta{font-size:12.5px;color:var(--sub)}
+.x{border:0;background:none;color:var(--sub);font-size:22px;line-height:1;padding:2px 6px;cursor:pointer}
+.price{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:8px 0 10px}
+.price b{font-size:28px;letter-spacing:.5px}
+.chg{font-size:16px;font-weight:bold}
+.up{color:var(--up)} .down{color:var(--down)} .flat{color:var(--sub)}
+.bal{border-top:1px dashed var(--line);padding-top:10px}
+.bal h3{font-size:14px;margin:0 0 8px;color:var(--sub);font-weight:bold}
+.row{display:grid;grid-template-columns:7.2em 1fr;gap:8px;align-items:center;margin:6px 0;font-size:14px}
+.bar{height:16px;border-radius:5px;background:var(--line);position:relative;overflow:hidden}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:5px}
+.num{font-size:13px;color:var(--sub);grid-column:2;margin-top:-4px}
+.say{font-size:14.5px;margin:8px 0 2px;font-weight:bold}
+details{margin-top:6px;font-size:13.5px}
+summary{cursor:pointer;color:var(--main2)}
+table{width:100%;border-collapse:collapse;margin-top:6px;font-size:13px}
+td,th{padding:5px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+td.r,th.r{text-align:right;white-space:nowrap}
+.note{font-size:12.5px;color:var(--sub);margin:6px 0 0}
+.warn{background:var(--warn);border:1px solid var(--warnline);border-radius:10px;padding:8px 10px;font-size:13.5px;margin-bottom:12px}
+.foot{font-size:12.5px;color:var(--sub)}
+.foot a{color:var(--main2)}
+h2{font-size:17px;margin:0 0 8px}
+.kinds{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+.kinds label{border:1px solid var(--line);border-radius:18px;padding:6px 11px;font-size:14px;cursor:pointer}
+.kinds input{margin:0 4px 0 0}
+textarea{width:100%;min-height:110px;font-size:16px;padding:10px;border:2px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font-family:inherit}
+.btn{border:0;border-radius:10px;background:var(--main);color:#fff;font-size:16px;padding:11px 18px;cursor:pointer;font-weight:bold}
+@media (prefers-color-scheme: dark){ .btn{color:#0d1a12} }
+.btn:disabled{opacity:.5;cursor:default}
+.msg{font-size:14px;margin-top:8px;min-height:1.4em}
+.cand{display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--line);padding:10px 0}
+.cand:last-child{border-bottom:0}
+.cand .t{flex:1;min-width:0}
+.cand .t b{display:block;font-size:15px}
+.cand .t span{font-size:13px;color:var(--sub)}
+.vote{border:1px solid var(--main2);background:none;color:var(--main2);border-radius:20px;padding:6px 12px;font-size:14px;cursor:pointer;white-space:nowrap}
+.vote.done{background:var(--main2);color:#fff}
+@media (prefers-color-scheme: dark){ .vote.done{color:#0d1a12} }
+.tag{font-size:12px;border-radius:8px;padding:1px 7px;background:var(--line);color:var(--sub);white-space:nowrap}
+.done-list{list-style:none;padding:0;margin:0}
+.done-list li{padding:7px 0;border-bottom:1px solid var(--line);font-size:14.5px}
+.done-list li span{color:var(--sub);font-size:12.5px;margin-right:8px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <h1>📈 株ウォッチ <span class="ver" id="ver"></span></h1>
+  <div class="fresh" id="fresh">データを読みこみ中…</div>
+</header>
+<nav>
+  <button id="tabMain" class="on" onclick="tab('main')">気になる銘柄</button>
+  <button id="tabKoe" onclick="tab('koe')">みんなの声</button>
+</nav>
+
+<main>
+<section id="pMain">
+  <div id="warnBox"></div>
+  <div class="box search">
+    <input id="q" type="search" inputmode="search" autocomplete="off" placeholder="銘柄名かコード（例：トヨタ・7203）" aria-label="銘柄を探す">
+    <ul class="sug" id="sug"></ul>
+  </div>
+  <div id="cards"></div>
+  <div class="box foot">
+    <b>見かた</b><br>
+    ・<b style="color:var(--kai)">信用買い残</b>＝お金を借りて買われている株の数。いつか売られる株。<br>
+    ・<b style="color:var(--kara)">機関の空売り</b>＝証券会社などの機関が、株を借りて売っている数（発行済みの0.5%以上を持つ機関だけ東証に報告がある）。いつか買い戻される株。<br>
+    ・どちらも「株の数」なので同じ物差しで並べています。<br><br>
+    <b>データ</b>：信用残・空売り残高報告・銘柄名は日本取引所グループ（東証）の公表資料、株価は Yahoo! Finance から毎晩まとめて取得。株価は前の営業日の終値です。<br>
+    <span id="karaNote"></span><br>
+    このアプリは数字を並べるだけで、売り買いをすすめるものではありません。投資の判断はご自身で。<br>
+    登録した銘柄はこの端末の中だけに保存され、どこにも送られません。
+  </div>
+</section>
+
+<section id="pKoe" hidden>
+  <div class="box">
+    <h2>📮 意見箱</h2>
+    <div class="note" style="margin:0 0 4px">「こうなったらいいのに」「ここがおかしい」を教えてください。いただいた声でアプリを直していきます。書いた文は作者だけが読み、公開はしません。名前や連絡先は書かないでください。</div>
+    <div class="kinds" id="kinds"></div>
+    <textarea id="iken" maxlength="500" placeholder="例：決算の日も出してほしい"></textarea>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+      <span class="note" style="margin:0" id="len">0 / 500</span>
+      <button class="btn" id="send" onclick="sendIken()">送る</button>
+    </div>
+    <div class="msg" id="sendMsg"></div>
+  </div>
+  <div class="box">
+    <h2>🗳️ つぎに作るもの投票</h2>
+    <div class="note" style="margin:0 0 6px">ほしいものに👍。票の多いものから作ります（1人1つの候補に1票）。</div>
+    <div id="cands"><div class="empty">読みこみ中…</div></div>
+  </div>
+  <div class="box">
+    <h2>🛠️ みんなの声で直したこと</h2>
+    <ul class="done-list" id="doneList"><li class="empty">読みこみ中…</li></ul>
+    <div class="note" id="ikenCount"></div>
+  </div>
+</section>
+</main>
+
+<script>
+'use strict';
+const VERSION = 'v1.0.0';
+// 意見箱の受け口（Google Apps Script のウェブアプリURL）。空のあいだは「準備中」と出る
+const KOE_URL = '';
+const COUNT_URL = 'https://script.google.com/macros/s/AKfycbxUtIrmhEC6aWCJmfzDkGBHghIoQtiGZD9vQQrsiU2hhAilfc-jATezlTBru3iOsHaOWg/exec';
+const LS_LIST = 'kw_list', LS_VOTER = 'kw_voter', LS_VOTED = 'kw_voted';
+const KINDS = ['ほしい機能', 'まちがい・おかしい', '使いにくい', 'そのほか'];
+const PICKS = [['7203', 'トヨタ'], ['6758', 'ソニーG'], ['9984', 'ソフトバンクG'], ['8306', '三菱UFJ'], ['7974', '任天堂']];
+
+let D = null;          // data/latest.json
+let index = [];        // 検索用 [コード, ふりがな無しの名前を正規化したもの]
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// 全角半角・大文字小文字・ひらがなカタカナのちがいをそろえて比べる（「えくさ」でエクサが出るように）
+const norm = s => String(s || '').normalize('NFKC').toLowerCase().replace(/\s+/g, '')
+  .replace(/[ぁ-ゖ]/g, ch => String.fromCharCode(ch.charCodeAt(0) + 0x60));
+function lsGet(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }
+function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+
+function fmtShares(n) {
+  if (n == null) return '—';
+  const a = Math.abs(n);
+  if (a >= 1e8) return (n / 1e8).toFixed(2).replace(/\.?0+$/, '') + '億株';
+  if (a >= 1e4) return (n / 1e4).toFixed(a >= 1e6 ? 0 : 1).replace(/\.0$/, '') + '万株';
+  return n.toLocaleString('ja-JP') + '株';
+}
+function signed(n, f) { return (n > 0 ? '+' : n < 0 ? '−' : '±') + f(Math.abs(n)); }
+function yen(v) { return v == null ? '—' : v.toLocaleString('ja-JP', { maximumFractionDigits: 1 }); }
+const md = s => s ? s.slice(5).replace('/', '/') : '—';
+
+function tab(t) {
+  $('pMain').hidden = t !== 'main'; $('pKoe').hidden = t !== 'koe';
+  $('tabMain').classList.toggle('on', t === 'main'); $('tabKoe').classList.toggle('on', t === 'koe');
+  if (t === 'koe') loadKoe();
+}
+
+// ---------- データ ----------
+async function load() {
+  $('ver').textContent = VERSION;
+  try {
+    D = await fetch('data/latest.json', { cache: 'no-cache' }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+  } catch (e) {
+    $('fresh').textContent = 'データが読めませんでした。電波のよいところで開き直してください。';
+    return;
+  }
+  index = Object.entries(D.s).map(([c, v]) => [c, norm(v[0])]);
+  $('fresh').textContent = `株価 ${md(D['株価の日'])}終値 ・ 信用残 ${md(D['信用基準日'])}時点 ・ 空売り ${md(D['空売り公表日'])}公表`;
+  $('karaNote').textContent = `※機関の空売りは、${D['空売り記録開始']}から東証の報告を貯めて計算しています。それより前から増減のない空売りは、報告が出るまで見えません。`;
+  // 古さの警告：更新から4日以上たっていたら
+  const last = new Date(D['更新'].replace(/\//g, '-').replace(' ', 'T') + ':00+09:00');
+  if (Date.now() - last > 4 * 86400e3) {
+    $('warnBox').innerHTML = `<div class="warn">⚠️ データが ${esc(D['更新'])} から更新されていません。数字が古い可能性があります。</div>`;
+  }
+  render();
+}
+
+// ---------- 検索 ----------
+$('q').addEventListener('input', () => {
+  const q = norm($('q').value);
+  const ul = $('sug');
+  if (!q || !D) { ul.innerHTML = ''; return; }
+  const list = lsGet(LS_LIST, []);
+  const hit = [];
+  for (const [c, n] of index) {
+    if (norm(c).startsWith(q) || n.includes(q)) hit.push(c);
+    if (hit.length >= 30) break;
+  }
+  hit.sort((a, b) => (norm(a) === q ? -1 : 0) - (norm(b) === q ? -1 : 0) || (D.s[a][0].length - D.s[b][0].length));
+  ul.innerHTML = hit.slice(0, 8).map(c =>
+    `<li><button onclick="add('${esc(c)}')"><span class="code">${esc(c)}</span><span>${esc(D.s[c][0])}</span>${list.includes(c) ? '<span class="tag">登録ずみ</span>' : ''}</button></li>`
+  ).join('') || '<li class="empty">見つかりません（東証で信用取引ができる銘柄だけ出ます）</li>';
+});
+
+function add(c) {
+  if (!D || !D.s[c]) return;
+  const list = lsGet(LS_LIST, []);
+  if (!list.includes(c)) { list.unshift(c); lsSet(LS_LIST, list); }
+  $('q').value = ''; $('sug').innerHTML = '';
+  render();
+}
+function removeCode(c) {
+  lsSet(LS_LIST, lsGet(LS_LIST, []).filter(x => x !== c));
+  render();
+}
+
+// ---------- カード ----------
+function render() {
+  const list = lsGet(LS_LIST, []).filter(c => D.s[c]);
+  const box = $('cards');
+  if (!list.length) {
+    box.innerHTML = `<div class="box empty">気になる銘柄を上で探して登録してください。<br>たとえば：
+      <div class="chips" style="justify-content:center">${PICKS.filter(([c]) => D.s[c]).map(([c, n]) => `<button class="chip" onclick="add('${c}')">${esc(n)}</button>`).join('')}</div></div>`;
+    return;
+  }
+  box.innerHTML = list.map(card).join('');
+}
+
+function card(c) {
+  const [name, kubun, close, prev, pday, kai, kaiD, uri, uriD, kara, market, gyoshu] = D.s[c];
+  let chgHtml = '<span class="chg flat">前日比 —</span>';
+  if (close != null && prev) {
+    const d = close - prev, p = d / prev * 100;
+    const cls = d > 0 ? 'up' : d < 0 ? 'down' : 'flat';
+    const mark = d > 0 ? '▲' : d < 0 ? '▼' : '';
+    chgHtml = `<span class="chg ${cls}">${mark}${signed(d, yen)}円（${signed(p, v => v.toFixed(2))}%）</span>`;
+  }
+  const karaSum = kara.reduce((s, r) => s + r[2], 0);
+  const karaPct = kara.reduce((s, r) => s + r[1], 0);
+  const max = Math.max(kai, karaSum, 1);
+  let say;
+  if (!karaSum) say = '機関の空売り（0.5%以上）の報告はありません';
+  else if (kai >= karaSum) say = `信用買い残は、機関の空売りの約${(kai / karaSum).toFixed(1)}倍`;
+  else say = `機関の空売りは、信用買い残の約${(karaSum / Math.max(kai, 1)).toFixed(1)}倍`;
+  const karaTable = kara.length ? `<details><summary>空売りしている機関（${kara.length}社）</summary>
+    <table><tr><th>機関</th><th class="r">割合</th><th class="r">株数</th><th class="r">報告の日</th></tr>
+    ${kara.map(r => `<tr><td>${esc(r[0])}</td><td class="r">${r[1].toFixed(2)}%</td><td class="r">${esc(fmtShares(r[2]))}</td><td class="r">${esc(md(r[3]))}</td></tr>`).join('')}
+    </table></details>` : '';
+  const seidoNote = kubun === '制度信用' ? '<p class="note">※制度信用銘柄：制度信用では空売りできないため、個人の信用売り残はとても少なく出ます。</p>' : '';
+  return `<div class="card">
+    <div class="top">
+      <div><div class="name">${esc(name)}</div>
+        <div class="meta">${esc(c)}${market ? ' ・ ' + esc(market) : ''}${gyoshu ? ' ・ ' + esc(gyoshu) : ''}</div></div>
+      <button class="x" aria-label="${esc(name)}を外す" title="外す" onclick="removeCode('${esc(c)}')">×</button>
+    </div>
+    <div class="price"><b>${close == null ? '—' : yen(close) + '<small style="font-size:15px">円</small>'}</b>${chgHtml}<span class="meta">${esc(md(pday))}終値</span></div>
+    <div class="bal">
+      <h3>⚖️ 信用買い残 と 機関の空売り</h3>
+      <div class="row"><span style="color:var(--kai);font-weight:bold">信用買い残</span><div class="bar"><i style="width:${kai / max * 100}%;background:var(--kai)"></i></div>
+        <span class="num">${esc(fmtShares(kai))}（前日比 ${esc(signed(kaiD || 0, fmtShares))}）</span></div>
+      <div class="row"><span style="color:var(--kara);font-weight:bold">機関の空売り</span><div class="bar"><i style="width:${karaSum / max * 100}%;background:var(--kara)"></i></div>
+        <span class="num">${karaSum ? esc(fmtShares(karaSum)) + `（発行済みの${karaPct.toFixed(2)}%・${kara.length}社）` : '報告なし'}</span></div>
+      <div class="say">${esc(say)}</div>
+      <p class="note">個人の信用売り残：${esc(fmtShares(uri))}（前日比 ${esc(signed(uriD || 0, fmtShares))}）</p>
+      ${seidoNote}${karaTable}
+    </div>
+  </div>`;
+}
+
+// ---------- みんなの声 ----------
+function voterId() {
+  let v = lsGet(LS_VOTER, '');
+  if (!/^[a-f0-9]{24}$/.test(v)) {
+    const a = new Uint8Array(12); crypto.getRandomValues(a);
+    v = [...a].map(b => b.toString(16).padStart(2, '0')).join('');
+    lsSet(LS_VOTER, v);
+  }
+  return v;
+}
+$('kinds').innerHTML = KINDS.map((k, i) => `<label><input type="radio" name="kind" value="${esc(k)}" ${i ? '' : 'checked'}>${esc(k)}</label>`).join('');
+$('iken').addEventListener('input', () => { $('len').textContent = `${$('iken').value.length} / 500`; });
+
+async function post(body) {
+  return fetch(KOE_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) }).then(r => r.json());
+}
+
+async function sendIken() {
+  const text = $('iken').value.trim();
+  const msg = $('sendMsg');
+  if (!KOE_URL) { msg.textContent = '意見箱はただいま準備中です。'; return; }
+  if (text.length < 2) { msg.textContent = '内容を書いてください。'; return; }
+  const kind = (document.querySelector('input[name=kind]:checked') || {}).value || 'そのほか';
+  $('send').disabled = true; msg.textContent = '送っています…';
+  try {
+    const r = await post({ type: 'iken', kind, text, ver: VERSION });
+    if (r.ok) { msg.textContent = '✅ 届きました。ありがとうございます！'; $('iken').value = ''; $('len').textContent = '0 / 500'; }
+    else msg.textContent = r.msg || '送れませんでした。';
+  } catch (e) { msg.textContent = '送れませんでした。電波のよいところでもう一度どうぞ。'; }
+  $('send').disabled = false;
+}
+
+let koeLoaded = false;
+async function loadKoe(force) {
+  if (koeLoaded && !force) return;
+  if (!KOE_URL) {
+    $('cands').innerHTML = '<div class="empty">準備中です。もうすぐ投票できるようになります。</div>';
+    $('doneList').innerHTML = `<li><span>${esc(md((D && D['更新'] || '').slice(0, 10)))}</span>公開しました</li>`;
+    $('send').disabled = false;
+    return;
+  }
+  try {
+    const j = await fetch(KOE_URL).then(r => r.json());
+    koeLoaded = true;
+    const voted = lsGet(LS_VOTED, []);
+    const cs = (j.candidates || []).slice().sort((a, b) => (a.s === '受付中' ? 0 : 1) - (b.s === '受付中' ? 0 : 1) || b.n - a.n);
+    $('cands').innerHTML = cs.map(c => {
+      const open = c.s === '受付中', mine = voted.includes(c.id);
+      const btn = open ? `<button class="vote ${mine ? 'done' : ''}" ${mine ? 'disabled' : ''} onclick="vote('${esc(c.id)}')">👍 ${Number(c.n) || 0}</button>`
+                       : `<span class="tag">${esc(c.s)}・${Number(c.n) || 0}票</span>`;
+      return `<div class="cand"><div class="t"><b>${esc(c.t)}</b><span>${esc(c.d)}</span></div>${btn}</div>`;
+    }).join('') || '<div class="empty">いまは候補がありません。意見箱で教えてください。</div>';
+    $('doneList').innerHTML = (j.done || []).map(d => `<li><span>${esc(d.d)}</span>${esc(d.t)}</li>`).join('') || '<li class="empty">まだありません</li>';
+    $('ikenCount').textContent = j.count ? `これまでに届いた意見：${Number(j.count)}件` : '';
+  } catch (e) {
+    $('cands').innerHTML = '<div class="empty">読みこめませんでした。少したってから開き直してください。</div>';
+  }
+}
+
+async function vote(id) {
+  const voted = lsGet(LS_VOTED, []);
+  if (voted.includes(id)) return;
+  try {
+    const r = await post({ type: 'vote', id, voter: voterId() });
+    if (r.ok) { voted.push(id); lsSet(LS_VOTED, voted); loadKoe(true); }
+    else alert(r.msg || '送れませんでした');
+  } catch (e) { alert('送れませんでした。電波のよいところでもう一度どうぞ。'); }
+}
+
+// ---------- 開かれた回数（数だけ・自分のGASへ） ----------
+try {
+  const st = lsGet('kw_seen', null);
+  const isNew = !st;
+  if (isNew) lsSet('kw_seen', 1);
+  const home = matchMedia('(display-mode: standalone)').matches;
+  const from = new URLSearchParams(location.search).get('from') || '';
+  fetch(`${COUNT_URL}?app=kabu-watch&ver=${encodeURIComponent(VERSION)}&from=${encodeURIComponent(from)}&mode=${home ? 'home' : 'browser'}&new=${isNew}`, { mode: 'no-cors', keepalive: true }).catch(() => {});
+} catch (e) {}
+
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+load();
+</script>
+</body>
+</html>

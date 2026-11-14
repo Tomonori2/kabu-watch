@@ -1,0 +1,40 @@
+# 株ウォッチ：データを毎日集める（GitHub が無料で動かしてくれるロボット）
+# 平日の夜19時と朝8時（日本時間）に collect.py を動かし、data/ が変わったら保存して公開する。
+name: データを集める
+
+on:
+  schedule:
+    - cron: "0 10 * * 1-5"   # 日本時間 月〜金 19:00
+    - cron: "0 23 * * 0-4"   # 日本時間 月〜金 08:00（前の晩に取れなかった分の取り直し）
+  workflow_dispatch:          # 手で「Run workflow」を押しても動く
+
+permissions:
+  contents: write
+
+concurrency:
+  group: collect
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python collect.py
+      - name: 変わっていたら保存
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "変更なし"
+          else
+            git commit -m "データ更新 $(TZ=Asia/Tokyo date '+%Y/%m/%d %H:%M')"
+            git pull --rebase
+            git push
+          fi
