@@ -1,6 +1,6 @@
 // 株ウォッチ Service Worker（アプリを裏で支える小さなプログラム）
 // まずネットから取り、つながらないときは保存してある分を出す（古い版が残り続けないように）
-const CACHE = 'kabu-watch-v1.0.0';
+const CACHE = 'kabu-watch-v1.0.1';
 const SHELL = ['./', 'index.html', 'kabu-watch.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
 
 self.addEventListener('install', e => {

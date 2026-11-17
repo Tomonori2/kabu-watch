@@ -105,7 +105,7 @@ textarea{width:100%;min-height:110px;font-size:16px;padding:10px;border:2px soli
 <section id="pMain">
   <div id="warnBox"></div>
   <div class="box search">
-    <input id="q" type="search" inputmode="search" autocomplete="off" placeholder="銘柄名かコード（例：トヨタ・7203）" aria-label="銘柄を探す">
+    <input id="q" type="search" inputmode="search" autocomplete="off" placeholder="名前かコード（例：トヨタ）" aria-label="銘柄を探す">
     <ul class="sug" id="sug"></ul>
   </div>
   <div id="cards"></div>
@@ -148,9 +148,9 @@ textarea{width:100%;min-height:110px;font-size:16px;padding:10px;border:2px soli
 
 <script>
 'use strict';
-const VERSION = 'v1.0.0';
+const VERSION = 'v1.0.1';
 // 意見箱の受け口（Google Apps Script のウェブアプリURL）。空のあいだは「準備中」と出る
-const KOE_URL = '';
+const KOE_URL = 'https://script.google.com/macros/s/AKfycbwt9f__WW9W13sZ4Lx1UYfRXIz93_7MsRKPYLLK_MWyERj5qx_2RxQHp7f12ex9JL3L/exec';
 const COUNT_URL = 'https://script.google.com/macros/s/AKfycbxUtIrmhEC6aWCJmfzDkGBHghIoQtiGZD9vQQrsiU2hhAilfc-jATezlTBru3iOsHaOWg/exec';
 const LS_LIST = 'kw_list', LS_VOTER = 'kw_voter', LS_VOTED = 'kw_voted';
 const KINDS = ['ほしい機能', 'まちがい・おかしい', '使いにくい', 'そのほか'];
