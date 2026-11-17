@@ -328,6 +328,10 @@ def 株価を取る(コード一覧, まとめ=200):
     import yfinance as yf
     import math
     結果 = {}
+    # 取引時間中（15:40より前）に動いたときは、今日の行は「途中の値段」なので使わない（終値ではないため）
+    いま = datetime.now(JST)
+    今日 = いま.strftime("%Y/%m/%d")
+    途中 = (いま.hour, いま.minute) < (15, 40)
     コード一覧 = list(コード一覧)
     for i in range(0, len(コード一覧), まとめ):
         組 = コード一覧[i:i + まとめ]
@@ -347,6 +351,8 @@ def 株価を取る(コード一覧, まとめ=200):
                 s = (df[t]["Close"] if len(tickers) > 1 else df["Close"]).dropna()
             except Exception:
                 continue
+            if 途中 and len(s) and s.index[-1].strftime("%Y/%m/%d") == 今日:
+                s = s.iloc[:-1]
             if len(s) == 0:
                 continue
             終値 = float(s.iloc[-1])
